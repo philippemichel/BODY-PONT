@@ -1,0 +1,100 @@
+---
+subtitle: "Plan d'analyse statistique V1.0"
+lof: false
+lot: false
+---
+
+# Généralités
+
+Le risque $\alpha$ retenu sera de \num{0.05} & la puissance de \num{0.8}.
+
+Vu le faible nombre de cas on ne fera pas d'hypothèse de normalité. Les variables numériques seront présentées par leur médiane avec les quartiles & comparées grâce à des tests non paramétriques en particulier le test de Wilcoxon ou de Kruskal-Wallis si il y a plus de deux catégories dans la variable de tri. Les variables discrètes seront présentées en nombre avec le pourcentage. L'intervalle de confiance (à 95 %) sera calculé par bootstrap (package `boot` [@boot]). Le test du $\chi^2$ de Spearman sera utilisé sous réserve d'un effectif suffisant, à défaut le test exact de Fischer. Des graphiques seront réalisés pour les résultats importants (package `ggplot2` [@ggplot]){#asimple}.
+
+Si nécessaire une analyse multivariée en régression logistique sera pratiquée en prenant tout d'abord en compte tous les critères ayant eu une p-value < 0,2 sur les tests simples puis en sélectionnant les plus pertinent (appréciation purement mathématique) par une analyse en step-by-step descendant basé sur l'AIC. @asimple
+
+## Taille de l'échantillon
+
+Il s'agit d'une étude observationnelle simple pour lesquelles il est difficile de préciser un nombre de cas nécessaires en l'absence de test statistique. Néanmoins on peut estimer à environ cent cas le strict minimum nécessaire pour avoir un échantillon utilisable s'il n'y a pas trop de données manquantes (marge d'erreur acceptable : \qty{10}{\percent} , grande population réelle, réponse à la question à \qty{50}{\percent} (situation la plus défavorable).
+
+## Données manquantes
+
+Le décompte des données manquantes sera réalisé & présenté par un tableau ou un graphique. Les lecteurs ayant trop de données manquantes ou non utilisables (\> 20 %) ne seront pas pris en compte après validation par le promoteur. Sinon les données manquantes seront imputées (\glspl{imput} multiples, 150 itérations au maximum --- package `missMDA`[@missmda]) si considérées comme manquant de manière complètement aléatoire (`MCAR`) ou manquant de manière aléatoire (`MAR`).
+
+## Qualité des données
+
+Une analyse de corrélation (package `corr` [@corr]) entre les variables sera réalisée & présentée sur un graphique de corrélation. Si certaines variables se montrent anormalement corrélées elles devront être exclues de l'étude après accord du promoteur.
+
+# Description de la population
+
+## Analyse simple
+
+Plusieurs tableaux présenteront les résultats :
+
+1.  Caractéristiques démographiques des patients (âge, sexe\dots)
+2.  Caractéristiques du traumatisme
+3.  Variables médicales du patient à la prise en charge
+4.  Items du critère de Vittel
+5. Autres scores de gravité
+6. Données du scanner
+7. Résultats du scanner
+8. Orientation post scanner
+
+
+# Objectif principal
+
+*Proportion d’examens réalisés avec une indication jugée pertinente selon les recommandations professionnelles et les référentiels internes .*
+
+La pertinence de l'indication sera présentée pour chacun des scores (Vittel, ISS, NISS, & RTS). 
+
+Vu le design de l'étude les patients qui auraient nécessité un scanner mais ne l'on pas eu ne seront pas pris en compte. Seules les erreurs par défaut (scanner non fait alors qu'indiqué selon l'un ou l’autre des scores) seront présentés.
+
+On vérifiera si certains critères démographiques (âge\dots) ou liés aux circonstances du traumatisme influent sur ce résultat. Pour ne pas multiplier les tests seul le score qui semble le plus *fiable* sera étudié. Outre l'analyse simple réalisée avec les tests décrits plus haut (@fig-asimple).
+
+
+# Objectifs secondaires
+
+## Objectif 1
+
+*Délai moyen entre l’entrée aux urgences et le passage au scanner..*
+ 
+ Le délai sera présenté en médiane & quartiles. On comparera surtout entre les scanners prescrits par le médecin du SMUR & ceux prescrits par le médecin des urgences.
+ 
+## Objectif 2
+
+*Coût moyen estimé par scanner réalisé..*
+
+Présentation simple du coût moyen par scanner réalisé.
+
+
+## Objectif 3
+
+*Orientation en fonction du diagnostic retenu post-scanner.*
+
+Les orientations possibles seront présentées pour chaque diagnostic scannographique.
+
+## Objectif 4
+
+*Taux de scanners non contributifs avec indication jugée pertinente.*
+
+Le nb & pourcentage de scanner non contributifs (càd normaux) sera présenté pour les indications pertinentes (eselon les scores) ou non. 
+
+
+## Objectif 5
+
+*Fréquence des diagnostics les plus retrouvés et différence de motif entre la prescription par le médecin du SAMU vs médecin intra-hospitalier.*
+
+Présentation simple des principaux diagnostics retrouvés. 
+
+Comparaison simple des indications entre les deux catégories de médecin. S'ilexiste une diiférence una pondération par la gravité du malade sera faite (régression). 
+
+# Technique {.unnumbered}
+
+L'analyse statistique sera réalisée avec le logiciel **R**[@rstat] & divers packages. Outre ceux cités dans le texte ou utilisera en particulier `tidyverse` [@tidy] & `baseph` [@baseph].
+
+Un dépôt GitHub sera utilisé qui ne comprendra que le code & non les données ou résultats. Au besoin un faux tableau de données sera présenté pour permettre des tests.
+
+<https://github.com/philippemichel/BODY-PONT>
+
+\printglossaries
+
+# Bibliographie {.unnumbered}
