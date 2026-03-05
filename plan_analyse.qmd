@@ -8,9 +8,9 @@ lot: false
 
 Le risque $\alpha$ retenu sera de \num{0.05} & la puissance de \num{0.8}.
 
-Vu le faible nombre de cas on ne fera pas d'hypothèse de normalité. Les variables numériques seront présentées par leur médiane avec les quartiles & comparées grâce à des tests non paramétriques en particulier le test de Wilcoxon ou de Kruskal-Wallis si il y a plus de deux catégories dans la variable de tri. Les variables discrètes seront présentées en nombre avec le pourcentage. L'intervalle de confiance (à 95 %) sera calculé par bootstrap (package `boot` [@boot]). Le test du $\chi^2$ de Spearman sera utilisé sous réserve d'un effectif suffisant, à défaut le test exact de Fischer. Des graphiques seront réalisés pour les résultats importants (package `ggplot2` [@ggplot]){#asimple}.
+Vu le faible nombre de cas on ne fera pas d'hypothèse de normalité. Les variables numériques seront présentées par leur médiane avec les quartiles & comparées grâce à des tests non paramétriques en particulier le test de Wilcoxon ou de Kruskal-Wallis si il y a plus de deux catégories dans la variable de tri. Les variables discrètes seront présentées en nombre avec le pourcentage. L'intervalle de confiance (à 95 %) sera calculé par bootstrap (package `boot` [@boot]). Le test du $\chi^2$ de Spearman sera utilisé sous réserve d'un effectif suffisant, à défaut le test exact de Fischer. Des graphiques seront réalisés pour les résultats importants (package `ggplot2` [@ggplot])\label{asimple}.
 
-Si nécessaire une analyse multivariée en régression logistique sera pratiquée en prenant tout d'abord en compte tous les critères ayant eu une p-value < 0,2 sur les tests simples puis en sélectionnant les plus pertinent (appréciation purement mathématique) par une analyse en step-by-step descendant basé sur l'AIC. @asimple
+Si nécessaire une analyse multivariée\label{amulti} en régression logistique sera pratiquée en prenant tout d'abord en compte tous les critères ayant eu une p-value < 0,2 sur les tests simples puis en sélectionnant les plus pertinent (appréciation purement mathématique) par une analyse en step-by-step descendant basé sur l'AIC. 
 
 ## Taille de l'échantillon
 
@@ -48,7 +48,7 @@ La pertinence de l'indication sera présentée pour chacun des scores (Vittel, I
 
 Vu le design de l'étude les patients qui auraient nécessité un scanner mais ne l'on pas eu ne seront pas pris en compte. Seules les erreurs par défaut (scanner non fait alors qu'indiqué selon l'un ou l’autre des scores) seront présentés.
 
-On vérifiera si certains critères démographiques (âge\dots) ou liés aux circonstances du traumatisme influent sur ce résultat. Pour ne pas multiplier les tests seul le score qui semble le plus *fiable* sera étudié. Outre l'analyse simple réalisée avec les tests décrits plus haut (@fig-asimple).
+On vérifiera si certains critères démographiques (âge\dots) ou liés aux circonstances du traumatisme influent sur ce résultat. Pour ne pas multiplier les tests seul le score qui semble le plus *fiable* sera étudié. Outre l'analyse simple réalisée avec les tests décrits plus haut (\ref{asimple}) une analyse multivariée sera réalisée (\ref{amulti}).
 
 
 # Objectifs secondaires
