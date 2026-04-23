@@ -48,7 +48,7 @@ La pertinence de l'indication sera présentée pour chacun des scores (Vittel, I
 
 Vu le design de l'étude les patients qui auraient nécessité un scanner mais ne l'on pas eu ne seront pas pris en compte. Seules les erreurs par défaut (scanner non fait alors qu'indiqué selon l'un ou l’autre des scores) seront présentés.
 
-On vérifiera si certains critères démographiques (âge\dots) ou liés aux circonstances du traumatisme influent sur ce résultat. Pour ne pas multiplier les tests seul le score qui semble le plus *fiable* sera étudié. Outre l'analyse simple réalisée avec les tests décrits plus haut (\ref{asimple}) une analyse multivariée sera réalisée (\ref{amulti}).
+On vérifiera si certains critères démographiques (âge\dots) ou liés aux circonstances du traumatisme influent sur ce résultat. Pour ne pas multiplier les tests seul le score qui semble le plus *fiable* sera étudié. Outre l'analyse simple réalisée avec les tests décrits plus haut (\href{asimple}{analyse simpe}) une analyse multivariée sera réalisée (\ref{amulti}).
 
 
 # Objectifs secondaires

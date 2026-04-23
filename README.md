@@ -17,4 +17,7 @@
 État des lieux sur les body scanners réalisés à Pontoise dans le cadre de l’urgence.
 
 - 05/03/2026 Plan d’analyse statistique V0.1
+- 23/04/2026 Import
 
+
+*Ce dépôt ne contient pas les données qui ne m'appartiennent pas. *
