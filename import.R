@@ -16,16 +16,18 @@ library(labelled)
 
 tt <- read_ods("datas/bodypont.ods", sheet = "data", na = c("", " ", "NA")) |>
   clean_names() |>
-  #  mutate(across(is.character, as.factor)) |>
   mutate(across(starts_with("date"), mdy)) |>
   mutate(across(starts_with("heure"), hms)) |>
   mutate(
     delais_admission_scanner =
       (as.numeric((date_scanner + heure_scanner) - (date_admission + heure_admission))) / 60
-  )
+  ) |>
+  mutate(decouverte_fortuite = ifelse(decouverte_fortuite == "non", "non", "oui")) |>
+  mutate(across(is.character, as.factor))
 
 pp <- str_split(tt$pa, "/", simplify = TRUE)
 tt$pa <- round((as.numeric(pp[, 1]) + as.numeric(pp[, 2]) * 2) / 3, 0)
+levels(tt$deces_meme_vehicule) <- c("non", "oui")
 
 bn <- read_ods("datas/bodypont.ods", sheet = "bnom", na = c("", " ", "NA"))
 var_label(tt) <- bn$titre

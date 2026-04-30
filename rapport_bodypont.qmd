@@ -1,0 +1,380 @@
+---
+subtitle: "Rapport statistique V1.0"
+cache: false
+---
+
+```{r}
+#| label: setup
+
+rm(list = ls())
+#
+library("baseph")
+library("tidyverse")
+library("gtsummary")
+library("kableExtra")
+library("forestmodel")
+library("labelled")
+library("epiDisplay")
+library("visdat")
+library("corrplot")
+library("biostats")
+library("colorspace")
+library("apyramid")
+library("FactoMineR")
+library("factoextra")
+library("missMDA")
+library("readODS")
+library("ggsci")
+library("survival")
+library("survminer")
+#
+theme_gtsummary_language(language = "fr", decimal.mark = ",")
+options(OutDec = ",")
+#
+load("datas/bodypont.RData")
+expx <- FALSE
+classeur <- "bodypont"
+# if (exp){system(paste0("rm -f ",classeur))}
+#
+theme_gtsummary_language(language = "fr", decimal.mark = ",")
+# theme_gtsummary_journal(journal = "jama")
+options(OutDec = ",")
+ptest <- list(all_continuous() ~ "t.test", all_categorical() ~ "chisq.test")
+stt <- list(
+  all_continuous() ~ "{mean} ± {sd}",
+  all_categorical() ~ "{n}/{N} ({p}%)"
+)
+```
+
+\bigskip
+
+\begin{notebox}[Attention !]
+Pour toutes les variables binaire (oui/non), seul le code "`Oui`" est présenté dans la plupart des tableaux.
+\end{notebox}
+
+
+# Validation de la population
+
+L'échantillon comporte `r nrow(tt)` cas.
+
+## Données manquantes
+
+```{r}
+#| label: fig-manq
+#| fig-cap: Données manquantes
+#| fig-asp: 0.8
+
+vis_dat(tt)
+```
+
+Les seules données manquantes gênantes concernent le diagnostic retenu & la durée d'hospitalisation.
+
+## Corrélations
+
+On recherche des corrélations non prévues qui pourraient être gênantes dans l'analyse.
+
+```{r}
+#| label: fig-cor
+#| fig-cap: Corrélations
+
+zz <- tt |> 
+  dplyr::select(- id) |> 
+  dplyr::select(!starts_with(c("date","heure"))) |> 
+  mutate(across(where(is.factor), ~ as.numeric(.x)))
+
+zz_cor <- cor(zz, use = "pairwise.complete.obs")
+
+corrplot(zz_cor,
+         type = 'lower',
+         title = "Matrice de corrélation",
+         tl.cex = 0.5,
+         diag = FALSE)
+```
+
+Les corrélations retrouvées étaient prévisibles.
+
+
+# Description de la population
+
+## Pré-hospitalier
+
+```{r}
+#| label: tbl-prehosp
+#| tbl-cap: Préhospitalier
+
+tt |> 
+dplyr::select(sexe,age,mode_arrivee:amine, jour_nuit) |> 
+ tbl_summary(missing = "no",
+              statistic = stt,
+             value = list(polytraumatise_suspecte = "oui")) |> 
+   bold_labels() |> 
+   modify_header(label ~ " ") |>
+  pexptabph(exp = expx, nomfich = classeur , nomsheet = "prehosp", lg = TRUE) 
+```
+
+```{r}
+#| label: fig-pyrpat
+#| fig-cap: Pyramide des âges
+
+tt |>
+  mutate(age = cut(age,
+    include.lowest = TRUE,
+    right = FALSE,
+    dig.lab = 4,
+    breaks = c(0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100)
+  )) |>
+  rename("Âge" = age) |>
+  apyramid::age_pyramid("Âge", sexe,
+    show_midpoint = FALSE
+  ) +
+  theme_minimal() +
+  labs(
+    title = "Pyramide des âges",
+    X = "Âge",
+    y = "Nombre de cas"
+  ) +
+  theme_light() +
+  scale_y_continuous(labels = c("Féminin", "Masculin"), breaks = c(-10, 30)) +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    plot.subtitle = element_text(size = 12),
+    axis.title.x = element_text(size = 12),
+    axis.title.y = element_text(
+      size = 12,
+      angle = 90,
+      vjust = .5
+    ),
+    axis.text.x = element_text(size = 12),
+    axis.text.y = element_text(size = 12),
+    legend.position = "none"
+  )
+
+```
+
+## Critères de Vittel
+
+
+```{r}
+#| label: tbl-critgrav
+#| tbl-cap: Critères de gravité (Vittel)
+
+tt |> 
+dplyr::select(critere_hemodynamique:chute) |> 
+ tbl_summary(missing = "no",
+              statistic = stt,
+             value = list(critere_hemodynamique = "oui", 
+                          gcs_bas = "oui", 
+                          plaie_penetrante = "oui", 
+                          fracture_instable = "oui", 
+                          detresse_respiratoire = "oui", 
+                          haute_cinetique = "oui", 
+                          ejection_vehicule = "oui", 
+                          deces_meme_vehicule = "oui", 
+                          chute = "oui"
+                          )) |> 
+   bold_labels() |> 
+   modify_header(label ~ " ") |>
+  pexptabph(exp = expx, nomfich = classeur , nomsheet = "critgrav", lg = TRUE) 
+```
+
+
+## Scores
+
+```{r}
+#| label: tbl-scores
+#| tbl-cap: Scores
+
+tt |> 
+dplyr::select(vittel_global:niss) |> 
+ tbl_summary(missing = "no",
+              statistic = stt,
+             value = list(vittel_global = "oui")) |> 
+   bold_labels() |> 
+   modify_header(label ~ " ") |>
+  pexptabph(exp = expx, nomfich = classeur , nomsheet = "scores", lg = TRUE) 
+```
+
+
+## Scanner
+
+```{r}
+#| label: tbl-scanner
+#| tbl-cap: Scanner
+
+tt |> 
+dplyr::select(delais_admission_scanner:decouverte_fortuite) |> 
+ tbl_summary(missing = "no",
+              statistic = stt) |> 
+   bold_labels() |> 
+   modify_header(label ~ " ") |>
+  pexptabph(exp = expx, nomfich = classeur , nomsheet = "scannerdiag", lg = TRUE) 
+```
+
+```{r}
+#| label: tbl-scannerdiag
+#| tbl-cap: Diagnostic principal retenu
+
+as_tibble(fct_infreq(tt$diagnostic_principal_retenu)) |> 
+
+ tbl_summary(missing = "no",
+              statistic = stt  ) |> 
+   bold_labels() |> 
+   modify_header(label ~ " ") |>
+  pexptabph(exp = expx, nomfich = classeur , nomsheet = "scanner", lg = TRUE) 
+```
+
+## Devenir du patient
+
+```{r}
+#| label: tbl-devenir
+#| tbl-cap: Devenir du patient
+
+tt |> 
+dplyr::select(radiographie_complementaire:deces_intra_hospitalier) |> 
+ tbl_summary(missing = "no",
+              statistic = stt,
+             value = list(bloc_urgence = "oui",
+                          hospitalisation = "oui",
+                          deces_24h = "oui",
+                          deces_intra_hospitalier = "oui"
+                          ))|> 
+   bold_labels() |> 
+   modify_header(label ~ " ") |>
+  pexptabph(exp = expx, nomfich = classeur , nomsheet = "devenir", lg = TRUE) 
+```
+
+
+# Objectif principal
+
+*Proportion d’examens réalisés avec une indication jugée pertinente selon les recommandations professionnelles et les référentiels internes*
+
+\begin{notebox}[Attention !]
+L'étude ne prend en compte que les patients ayant eu un scanner. On peut donc mettre en évidence les scanners réalisés en excès mais on rate les patients qui auraient du avoir un scanner mais ne l'on pas eu. 
+\end{notebox}
+
+## Critères de Vittel
+
+```{r}
+#| label: tbl-vittelp
+#| tbl-cap:  Critères de Vittel
+
+tt |> 
+  tbl_cross(vittel_global,indication_pertinente,
+            percent = "cell") |> 
+   bold_labels() |> 
+   modify_header(label ~ " ") |>
+  pexptabph(exp = expx, nomfich = classeur , nomsheet = "vittelp", lg = TRUE)
+
+ncor <- round(100*(59+86)/149,1)
+
+```
+
+On observe une concordance entre le score de Vittel & les indications jugés pertinentes dans `r ncor`% des cas. 
+
+# Objectifs secondaires
+
+## Objectif 1
+*Délai moyen entre l’entrée aux urgences et le passage au scanner.*
+
+```{r}
+#| label: tbl-delai1
+#| tbl-cap: Délai entre l’entrée aux urgences et le passage au scanner
+
+
+tt |> 
+dplyr::select(delais_admission_scanner,prescripteur_tdm) |> 
+ tbl_summary(missing = "no",
+             by = prescripteur_tdm,
+              statistic = stt)|> 
+   bold_labels() |> 
+  add_overall() |> 
+  add_p(test = ptest) |> 
+   modify_header(label ~ " ") |>
+  pexptabph(exp = expx, nomfich = classeur , nomsheet = "dela1", lg = TRUE)
+```
+
+```{r}
+#| label: fig-delai1
+#| fig-cap: Délai entre l’entrée aux urgences et le passage au scanner
+
+tt |> 
+  ggplot() +
+  aes(x = prescripteur_tdm, y = delais_admission_scanner, fill = prescripteur_tdm) +
+  geom_violin() +
+    theme_minimal() +
+    labs(
+    title = "Délai entre l’entrée aux urgences et le passage au scanner",
+    X = "Prescripteur",
+    y = "Minutes"
+  ) +
+  theme_light() +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    plot.subtitle = element_text(size = 12),
+    axis.title.x = element_text(size = 12),
+    axis.title.y = element_text(,
+      size = 12,
+      angle = 90,
+      vjust = .5
+    ),
+    axis.text.x = element_text(size = 12),
+    axis.text.y = element_text(size = 12),
+    legend.position = "none"
+  )
+```
+
+
+
+## Objectif 2
+*Coût moyen estimé par scanner réalisé.*
+
+Aucune donnée ne permet d'aborder ce thème. 
+
+## Objectif 3
+*Orientation en fonction du diagnostic retenu post-scanner.*
+
+Des regroupements ont du être réalisés. 
+
+```{r}
+#| label: tbl-orientation1
+#| tbl-cap: Orientation en fonction du diagnostic retenu post-scanner.
+
+zz <- tt |> 
+mutate(diagnostic_principal_retenu =  
+  fct_recode(diagnostic_principal_retenu ,
+    "Fracture membre" = "Fracture avant-bras",
+    "Fracture thoracique" = "Fracture clavicule",
+    "Fracture thoracique" = "Fracture costale",
+    "Fracture membre" = "Fracture fémur",
+    "Fracture membre" = "Fracture humérus",
+    "Fracture membre" = "Fracture jambe",
+    "Fracture face" = "Fracture mandibulaire",
+    "Fracture OPN" = "Fracture nez",
+    "Fracture face" = "Fracture sinus frontal",
+    "Fracture face" = "Fracture sinus maxillaire",
+    "Fracture thoracique" = "Fracture sternale",
+    "Hématome musculaire" = "Hématome région gluéale",
+    "Hemo ou pneumothorax" = "Hemopneumothorax",
+    "Hémorragie cérébrale" = "Hémorragie méningée",
+    "Lacération organe plein" = "Lacération hépatique",
+    "Lacération organe plein" = "Lacération splénique",
+    "épanchement péritonéal" = "Perforation digestive",
+    "Hemo ou pneumothorax" = "Pneumothorax",
+    "Hémorragie cérébrale" = "Hématome cérébral"
+  )) 
+zz$diagnostic_principal_retenu <- fct_infreq(zz$diagnostic_principal_retenu)
+
+zz |> 
+  dplyr::select(orientation,diagnostic_principal_retenu) |> 
+   tbl_summary(missing = "no",
+             by = orientation,
+              statistic = stt)|> 
+   bold_labels() |> 
+  add_n() |> 
+  add_p(test = ptest) |> 
+   modify_header(label ~ " ") |>
+  pexptabph(exp = expx, nomfich = classeur , nomsheet = "orientation1", lg = TRUE)
+```
+
+## Objectif 4
+*Taux de scanners non contributifs avec indication jugée pertinente.*
