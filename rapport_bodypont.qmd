@@ -22,10 +22,10 @@ library("colorspace")
 library("apyramid")
 library("FactoMineR")
 library("factoextra")
-library("missMDA")
+library("epiR")
 library("readODS")
 library("ggsci")
-library("survival")
+library("irr")
 library("survminer")
 #
 theme_gtsummary_language(language = "fr", decimal.mark = ",")
@@ -185,10 +185,9 @@ dplyr::select(critere_hemodynamique:chute) |>
 #| tbl-cap: Scores
 
 tt |> 
-dplyr::select(vittel_global:niss) |> 
+dplyr::select(rts:niss) |> 
  tbl_summary(missing = "no",
-              statistic = stt,
-             value = list(vittel_global = "oui")) |> 
+              statistic = stt) |> 
    bold_labels() |> 
    modify_header(label ~ " ") |>
   pexptabph(exp = expx, nomfich = classeur , nomsheet = "scores", lg = TRUE) 
@@ -204,7 +203,18 @@ dplyr::select(vittel_global:niss) |>
 tt |> 
 dplyr::select(delais_admission_scanner:decouverte_fortuite) |> 
  tbl_summary(missing = "no",
-              statistic = stt) |> 
+              statistic = stt,
+             value = list(scanner_contributif = "oui", 
+                          lesion_cerebrale= "oui", 
+                          lesion_thoracique = "oui",
+                          lesion_abdominale = "oui",
+                          lesion_pelvienne = "oui",
+                          lesion_membre = "oui",
+                          lesion_massif_facial = "oui",
+                          lesion_rachis = "oui",
+                          saignement_actif = "oui",
+                          decouverte_fortuite = "oui"
+                          )) |> 
    bold_labels() |> 
    modify_header(label ~ " ") |>
   pexptabph(exp = expx, nomfich = classeur , nomsheet = "scannerdiag", lg = TRUE) 
@@ -252,24 +262,106 @@ dplyr::select(radiographie_complementaire:deces_intra_hospitalier) |>
 L'étude ne prend en compte que les patients ayant eu un scanner. On peut donc mettre en évidence les scanners réalisés en excès mais on rate les patients qui auraient du avoir un scanner mais ne l'on pas eu. 
 \end{notebox}
 
-## Critères de Vittel
+## Scores & indication
 
 ```{r}
-#| label: tbl-vittelp
-#| tbl-cap:  Critères de Vittel
+#| label: tbl-scoreindic
+#| tbl-cap: Scores & indication
 
 tt |> 
-  tbl_cross(vittel_global,indication_pertinente,
-            percent = "cell") |> 
+  dplyr::select(c(vittel_global, indication_pertinente, iss_rec:rts_rec)) |>
+   tbl_summary(missing = "no",
+              statistic = stt,
+              by = "indication_pertinente") |> 
+  add_overall() |> 
    bold_labels() |> 
-   modify_header(label ~ " ") |>
-  pexptabph(exp = expx, nomfich = classeur , nomsheet = "vittelp", lg = TRUE)
-
-ncor <- round(100*(59+86)/149,1)
-
+   modify_header(label ~ " ") |> 
+  modify_spanning_header(c("stat_1", "stat_2") ~ "**Indication retenue**") |> 
+    pexptabph(exp = expx, nomfich = classeur , nomsheet = "scoreindic", lg = TRUE) 
 ```
 
-On observe une concordance entre le score de Vittel & les indications jugés pertinentes dans `r ncor`% des cas. 
+L'indication retenue est prise pour *gold standard* qui va servir de base d'é&valuation des divers scores. 
+
+```{r}
+#| label: macro_ssbssp
+
+tabssb <- function(sc){
+zz <- table(tt$indication_pertinente, sc)
+aa <- epi.tests(zz, conf.level = 0.95)
+aa <- aa$detail
+nn <- c("Sensibilité", "Spécificité", "Valeur prédictive positive", "Valeur prédictive négative")
+lln <- c(3,4,9,10)
+tabx <- NULL
+for (i in 1:4) {
+j <- lln[i]
+ll <- c(nn[i],bicph(aa[j,2]*100,aa[j,3]*100,aa[j,4]*100, pc = 2))
+tabx <- rbind(tabx, ll)
+}
+tabx <- as_tibble(tabx)
+names(tabx) <- c("Test", "% [ IC 95 %]")
+return(tabx)
+}
+```
+
+```{r}
+#| label: tbl-vittelssb
+#| tbl-cap: Critères de vittel
+#| 
+tabz <- tabssb(tt$vittel_global)
+    tabz |>
+      kbl(escape = TRUE, longtable = TRUE, booktabs = TRUE) |>
+      kable_styling(latex_options = c("scale_down", "repeat_header"))
+    if (expx) {
+      tabz |> 
+        as_tibble() |>
+        write_ods(path = classeur, sheet = "vittelssb", append = TRUE)
+    }
+```
+
+```{r}
+#| label: tbl-issssb
+#| tbl-cap: ISS
+#| 
+tabz <- tabssb(tt$iss_rec)
+    tabz |>
+      kbl(escape = TRUE, longtable = TRUE, booktabs = TRUE) |>
+      kable_styling(latex_options = c("scale_down", "repeat_header"))
+    if (expx) {
+      tabz |> 
+        as_tibble() |>
+        write_ods(path = classeur, sheet = "issssb", append = TRUE)
+    }
+```
+
+```{r}
+#| label: tbl-nissssb
+#| tbl-cap: NISS
+#| 
+tabz <- tabssb(tt$niss_rec)
+    tabz |>
+      kbl(escape = TRUE, longtable = TRUE, booktabs = TRUE) |>
+      kable_styling(latex_options = c("scale_down", "repeat_header"))
+    if (expx) {
+      tabz |> 
+        as_tibble() |>
+        write_ods(path = classeur, sheet = "nissssb", append = TRUE)
+    }
+```
+
+```{r}
+#| label: tbl-rtsssb
+#| tbl-cap: RTS
+#| 
+tabz <- tabssb(tt$rts_rec)
+    tabz |>
+      kbl(escape = TRUE, longtable = TRUE, booktabs = TRUE) |>
+      kable_styling(latex_options = c("scale_down", "repeat_header"))
+    if (expx) {
+      tabz |> 
+        as_tibble() |>
+        write_ods(path = classeur, sheet = "rtsssb", append = TRUE)
+    }
+```
 
 # Objectifs secondaires
 
@@ -290,7 +382,7 @@ dplyr::select(delais_admission_scanner,prescripteur_tdm) |>
   add_overall() |> 
   add_p(test = ptest) |> 
    modify_header(label ~ " ") |>
-  pexptabph(exp = expx, nomfich = classeur , nomsheet = "dela1", lg = TRUE)
+  gexptabph(exp = expx, nomfich = classeur , nomsheet = "dela1")
 ```
 
 ```{r}
@@ -371,10 +463,26 @@ zz |>
               statistic = stt)|> 
    bold_labels() |> 
   add_n() |> 
-  add_p(test = ptest) |> 
    modify_header(label ~ " ") |>
   pexptabph(exp = expx, nomfich = classeur , nomsheet = "orientation1", lg = TRUE)
 ```
 
 ## Objectif 4
 *Taux de scanners non contributifs avec indication jugée pertinente.*
+
+Seuls les TDM jugés *pertinents* ont été pris en compte.
+
+```{r}
+#| label: tbl-noncontr
+#| tbl-cap: Taux de scanners non contributifs avec indication jugée pertinente
+tt |> 
+  dplyr::filter(indication_pertinente == "oui") |>
+  dplyr::select(scanner_non_contributif_indication_pertinente) |> 
+  tbl_summary(missing = "no",
+              statistic = stt,
+              value = list(scanner_non_contributif_indication_pertinente = "oui")) |> 
+   bold_labels() |>
+   modify_header(label ~ " ") |> 
+   pexptabph(exp = expx, nomfich = classeur , nomsheet = "noncontr", lg = TRUE)
+```
+

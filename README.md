@@ -18,6 +18,7 @@
 
 - 05/03/2026 Plan d’analyse statistique V0.1
 - 23/04/2026 Import
+- 07/05:2026 Rapport OK (sauf graphiques)
 
 
 *Ce dépôt ne contient pas les données qui ne m'appartiennent pas. *

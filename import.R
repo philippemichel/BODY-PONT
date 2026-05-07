@@ -28,11 +28,63 @@ tt <- read_ods("datas/bodypont.ods", sheet = "data", na = c("", " ", "NA")) |>
 pp <- str_split(tt$pa, "/", simplify = TRUE)
 tt$pa <- round((as.numeric(pp[, 1]) + as.numeric(pp[, 2]) * 2) / 3, 0)
 levels(tt$deces_meme_vehicule) <- c("non", "oui")
-
+#
 bn <- read_ods("datas/bodypont.ods", sheet = "bnom", na = c("", " ", "NA"))
 var_label(tt) <- bn$titre
-
-
+# Scores
+tt <- tt |>
+  mutate(iss_rec = cut(iss,
+    include.lowest = TRUE,
+    right = FALSE,
+    dig.lab = 4,
+    breaks = c(0, 16, 100),
+    labels = c("non indiqué", "indiqué")
+  )) |>
+  mutate(niss_rec = cut(niss,
+    include.lowest = TRUE,
+    right = FALSE,
+    dig.lab = 4,
+    breaks = c(0, 16, 100),
+    labels = c("non indiqué", "indiqué")
+  )) |>
+  mutate(rts_rec = cut(rts,
+    include.lowest = TRUE,
+    right = FALSE,
+    dig.lab = 4,
+    breaks = c(0, 6, 100),
+    labels = c("indiqué", "non indiqué")
+  ))
+## Recodage de tt$vittel_global
+tt$vittel_global <- tt$vittel_global |>
+  fct_recode(
+    "non indiqué" = "non",
+    "indiqué" = "oui"
+  )
+#
+tt$iss_rec <- tt$iss_rec |>
+  fct_relevel(
+    "indiqué", "non indiqué"
+  )
+tt$niss_rec <- tt$niss_rec |>
+  fct_relevel(
+    "indiqué", "non indiqué"
+  )
+  fct_relevel(
+    "indiqué", "non indiqué"
+  )
+tt$vittel_global <- tt$vittel_global |>
+  fct_relevel(
+    "indiqué", "non indiqué"
+  )
+tt$indication_pertinente <- tt$indication_pertinente |>
+  fct_relevel(
+    "oui", "non"
+  )
+#
+var_label(tt$rts_rec) <- "RTS"
+var_label(tt$iss_rec) <- "ISS"
+var_label(tt$niss_rec) <- "NISS"
+#
 # Save data ---------------------------------------------------------------
 save(tt, file = "datas/bodypont.RData")
 load("datas/bodypont.RData")
