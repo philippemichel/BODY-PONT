@@ -45,6 +45,7 @@ stt <- list(
   all_categorical() ~ "{n}/{N} ({p}%)"
 )
 ```
+~ 
 
 \bigskip
 
@@ -106,6 +107,7 @@ tt |>
 dplyr::select(sexe,age,mode_arrivee:amine, jour_nuit) |> 
  tbl_summary(missing = "no",
               statistic = stt,
+              sort = all_categorical() ~ "frequency",
              value = list(polytraumatise_suspecte = "oui")) |> 
    bold_labels() |> 
    modify_header(label ~ " ") |>
@@ -224,9 +226,10 @@ dplyr::select(delais_admission_scanner:decouverte_fortuite) |>
 #| label: tbl-scannerdiag
 #| tbl-cap: Diagnostic principal retenu
 
-as_tibble(fct_infreq(tt$diagnostic_principal_retenu)) |> 
-
+tt |> 
+  dplyr::select(diagnostic_principal_retenu) |>
  tbl_summary(missing = "no",
+              sort = all_categorical() ~ "frequency",
               statistic = stt  ) |> 
    bold_labels() |> 
    modify_header(label ~ " ") |>
@@ -243,6 +246,7 @@ tt |>
 dplyr::select(radiographie_complementaire:deces_intra_hospitalier) |> 
  tbl_summary(missing = "no",
               statistic = stt,
+              sort = all_categorical() ~ "frequency",
              value = list(bloc_urgence = "oui",
                           hospitalisation = "oui",
                           deces_24h = "oui",
@@ -289,79 +293,42 @@ tabssb <- function(sc){
 zz <- table(tt$indication_pertinente, sc)
 aa <- epi.tests(zz, conf.level = 0.95)
 aa <- aa$detail
-nn <- c("Sensibilité", "Spécificité", "Valeur prédictive positive", "Valeur prédictive négative")
 lln <- c(3,4,9,10)
-tabx <- NULL
+llt <- NULL
 for (i in 1:4) {
 j <- lln[i]
-ll <- c(nn[i],bicph(aa[j,2]*100,aa[j,3]*100,aa[j,4]*100, pc = 2))
-tabx <- rbind(tabx, ll)
+ll <- bicph(aa[j,2]*100,aa[j,3]*100,aa[j,4]*100, pc = 2)
+llt <- c(llt,ll)
 }
-tabx <- as_tibble(tabx)
-names(tabx) <- c("Test", "% [ IC 95 %]")
+tabx<- cbind(tabx, llt)
 return(tabx)
 }
 ```
 
 ```{r}
 #| label: tbl-vittelssb
-#| tbl-cap: Critères de vittel
-#| 
-tabz <- tabssb(tt$vittel_global)
-    tabz |>
+#| tbl-cap: "Scores : sensibilité, spécificité, VPP & VPN"
+
+tabx <- tibble(c("Sensibilité", "Spécificité", "Valeur prédictive positive", "Valeur prédictive négative"))
+#
+tabx <- tabssb(tt$vittel_global)
+tabx <- tabssb(tt$iss_rec)
+tabx <- tabssb(tt$niss_rec)
+tabx <- tabssb(tt$rts_rec)
+names(tabx) <- c("test", "Vittel global", "ISS", "NISS", "RTS")
+   tabx |>
       kbl(escape = TRUE, longtable = TRUE, booktabs = TRUE) |>
       kable_styling(latex_options = c("scale_down", "repeat_header"))
     if (expx) {
-      tabz |> 
+      tabx |> 
         as_tibble() |>
-        write_ods(path = classeur, sheet = "vittelssb", append = TRUE)
+        write_ods(path = classeur, sheet = "ssbspc", append = TRUE)
     }
 ```
 
-```{r}
-#| label: tbl-issssb
-#| tbl-cap: ISS
-#| 
-tabz <- tabssb(tt$iss_rec)
-    tabz |>
-      kbl(escape = TRUE, longtable = TRUE, booktabs = TRUE) |>
-      kable_styling(latex_options = c("scale_down", "repeat_header"))
-    if (expx) {
-      tabz |> 
-        as_tibble() |>
-        write_ods(path = classeur, sheet = "issssb", append = TRUE)
-    }
-```
+Si les sensibilités sont plutôt bonnes, les spécificités sont très faibles ce qui rend les scores peu intéressants pour la sélection des patients à scanner. 
 
-```{r}
-#| label: tbl-nissssb
-#| tbl-cap: NISS
-#| 
-tabz <- tabssb(tt$niss_rec)
-    tabz |>
-      kbl(escape = TRUE, longtable = TRUE, booktabs = TRUE) |>
-      kable_styling(latex_options = c("scale_down", "repeat_header"))
-    if (expx) {
-      tabz |> 
-        as_tibble() |>
-        write_ods(path = classeur, sheet = "nissssb", append = TRUE)
-    }
-```
 
-```{r}
-#| label: tbl-rtsssb
-#| tbl-cap: RTS
-#| 
-tabz <- tabssb(tt$rts_rec)
-    tabz |>
-      kbl(escape = TRUE, longtable = TRUE, booktabs = TRUE) |>
-      kable_styling(latex_options = c("scale_down", "repeat_header"))
-    if (expx) {
-      tabz |> 
-        as_tibble() |>
-        write_ods(path = classeur, sheet = "rtsssb", append = TRUE)
-    }
-```
 
 # Objectifs secondaires
 
@@ -392,7 +359,8 @@ dplyr::select(delais_admission_scanner,prescripteur_tdm) |>
 tt |> 
   ggplot() +
   aes(x = prescripteur_tdm, y = delais_admission_scanner, fill = prescripteur_tdm) +
-  geom_violin() +
+  geom_violin(scale = "count") +
+  geom_boxplot(width = 0.1, fill = "grey90") +
     theme_minimal() +
     labs(
     title = "Délai entre l’entrée aux urgences et le passage au scanner",
@@ -400,8 +368,11 @@ tt |>
     y = "Minutes"
   ) +
   theme_light() +
+   scale_y_continuous(trans='log10',
+                      breaks = c(5, 15, 30, 60, 120, 240, 480),
+                     labels = c("5", "15", "30", "60", "120", "240", "480")) +
   theme(
-    plot.title = element_text(size = 14, face = "bold"),
+    plot.title = element_text(size = 12, face = "bold"),
     plot.subtitle = element_text(size = 12),
     axis.title.x = element_text(size = 12),
     axis.title.y = element_text(,
@@ -425,7 +396,7 @@ Aucune donnée ne permet d'aborder ce thème.
 ## Objectif 3
 *Orientation en fonction du diagnostic retenu post-scanner.*
 
-Des regroupements ont du être réalisés. 
+Des regroupements ont du être réalisés. Vu le grand nombre de cases possibles les effectifs sont ridicules & donc aucun test ne peut être réalisé.
 
 ```{r}
 #| label: tbl-orientation1
@@ -460,11 +431,12 @@ zz |>
   dplyr::select(orientation,diagnostic_principal_retenu) |> 
    tbl_summary(missing = "no",
              by = orientation,
+              sort = all_categorical() ~ "frequency",
               statistic = stt)|> 
    bold_labels() |> 
   add_n() |> 
    modify_header(label ~ " ") |>
-  pexptabph(exp = expx, nomfich = classeur , nomsheet = "orientation1", lg = TRUE)
+  gexptabph(exp = expx, nomfich = classeur , nomsheet = "orientation1")
 ```
 
 ## Objectif 4
@@ -484,5 +456,25 @@ tt |>
    bold_labels() |>
    modify_header(label ~ " ") |> 
    pexptabph(exp = expx, nomfich = classeur , nomsheet = "noncontr", lg = TRUE)
+```
+
+
+
+
+
+```{r}
+#| eval: false
+tt |> 
+  dplyr::select(bloc_urgence,diagnostic_principal_retenu,scanner_contributif) |> 
+tbl_summary(missing = "no",
+             by = bloc_urgence,
+              statistic = stt,
+              value = list(scanner_contributif = "oui")) |> 
+   bold_labels() |> 
+  add_n() |> 
+  add_p(test = ptest) |>
+   modify_header(label ~ " ") |>
+  pexptabph(exp = expx, nomfich = classeur , nomsheet = "noncontr2", lg = TRUE)
+
 ```
 
