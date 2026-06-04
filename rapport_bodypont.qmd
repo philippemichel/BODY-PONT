@@ -266,6 +266,8 @@ dplyr::select(radiographie_complementaire:deces_intra_hospitalier) |>
 L'étude ne prend en compte que les patients ayant eu un scanner. On peut donc mettre en évidence les scanners réalisés en excès mais on rate les patients qui auraient du avoir un scanner mais ne l'on pas eu. 
 \end{notebox}
 
+Le RTS étant quasiment constant dans l'échantillon donne des résultats aberrant.
+
 ## Scores & indication
 
 ```{r}
@@ -303,10 +305,25 @@ llt <- c(llt,ll)
 tabx<- cbind(tabx, llt)
 return(tabx)
 }
+
+ssb2 <- function(sc){
+zz <- table(tt$indication_pertinente, sc)
+aa <- epi.tests(zz, conf.level = 0.95)
+aa <- aa$detail
+se <- round(aa[[3,2]]*100,0)
+seb <- round(aa[[3,3]]*100,0)
+seh <- round(aa[[3,4]]*100,0)
+ssb <- c("ssb", se, seb, seh)
+sp <- round(aa[[4,2]]*100,0)
+spb <- round(aa[[4,3]]*100,0)
+sph <- round(aa[[4,4]]*100,0)
+spp <- c("spp", sp, spb, sph)
+return(list(ssb = ssb, spp = spp))
+}  
 ```
 
 ```{r}
-#| label: tbl-vittelssb
+#| label: tbl-ssbsp_scores
 #| tbl-cap: "Scores : sensibilité, spécificité, VPP & VPN"
 
 tabx <- tibble(c("Sensibilité", "Spécificité", "Valeur prédictive positive", "Valeur prédictive négative"))
@@ -328,6 +345,63 @@ names(tabx) <- c("test", "Vittel global", "ISS", "NISS", "RTS")
 
 Si les sensibilités sont plutôt bonnes, les spécificités sont très faibles ce qui rend les scores peu intéressants pour la sélection des patients à scanner. 
 
+```{r}
+#| label: fig-ssbsp_scores
+#| fig-cap: "Scores : sensibilité, spécificité"
+
+tabx <- NULL
+nn <- "Vittel global"
+aa <- ssb2(tt$vittel_global)
+ll1 <- c(nn,aa$ssb)
+         tabx <- rbind(tabx, ll1)
+ll2 <- c(nn,aa$spp)
+         tabx <- rbind(tabx, ll2)
+nn <- "ISS"
+aa <- ssb2(tt$iss_rec)
+ll1 <- c(nn,aa$ssb)
+tabx <- rbind(tabx, ll1)
+ll2 <- c(nn,aa$spp)
+tabx <- rbind(tabx, ll2)
+nn <- "NISS"
+aa <- ssb2(tt$niss_rec)
+ll1 <- c(nn,aa$ssb)
+tabx <- rbind(tabx, ll1)
+ll2 <- c(nn,aa$spp)
+tabx <- rbind(tabx, ll2)
+nn <- "RTS"
+aa <- ssb2(tt$rts_rec)
+ll1 <- c(nn,aa$ssb)
+tabx <- rbind(tabx, ll1)
+ll2 <- c(nn,aa$spp)
+tabx <- rbind(tabx, ll2)
+tabz <- as_tibble(tabx) |> 
+  mutate(across(3:5, as.numeric)) |> 
+  mutate(across(1:2, as.factor)) 
+names(tabz) <- c("Score", "stat","mm" ,"binf", "bsup")
+levels(tabz$stat) <- c("Spécificité", "Sensibilité")
+#
+tabz |> 
+  ggplot() +
+  aes(x = Score, y = mm, color = stat) +
+  geom_point() +
+  geom_errorbar(aes(ymin = binf, ymax = bsup), width = 0.2) +
+  facet_grid(stat ~ .) +
+      theme_light() +
+    labs(
+    title = "Scores : sensibilité, spécificité",
+    X = "Score",
+    y = ""
+  ) +
+  theme(
+    plot.title = element_text(size = 12, face = "bold"),
+    plot.subtitle = element_text(size = 12),
+    axis.title.x = element_text(size = 12),
+    axis.title.y = element_blank(),
+    axis.text.x = element_text(size = 12),
+    axis.text.y = element_text(size = 12),
+    legend.position = "none"
+  )
+```
 
 
 # Objectifs secondaires
@@ -361,13 +435,12 @@ tt |>
   aes(x = prescripteur_tdm, y = delais_admission_scanner, fill = prescripteur_tdm) +
   geom_violin(scale = "count") +
   geom_boxplot(width = 0.1, fill = "grey90") +
-    theme_minimal() +
+    theme_light() +
     labs(
     title = "Délai entre l’entrée aux urgences et le passage au scanner",
     X = "Prescripteur",
     y = "Minutes"
   ) +
-  theme_light() +
    scale_y_continuous(trans='log10',
                       breaks = c(5, 15, 30, 60, 120, 240, 480),
                      labels = c("5", "15", "30", "60", "120", "240", "480")) +
